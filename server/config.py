@@ -1,9 +1,9 @@
 """Configuration management for the voice agent system."""
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 
 class Config(BaseSettings):
@@ -75,13 +75,14 @@ class Config(BaseSettings):
     
     # Paths
     base_dir: Path = Field(default_factory=lambda: Path(__file__).parent.parent)
-    backchannel_dir: Path = Field(default=None)
-    vad_model_path: Path = Field(default=None)
+    backchannel_dir: Optional[Path] = Field(default=None)
+    vad_model_path: Optional[Path] = Field(default=None)
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+    }
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -91,14 +92,16 @@ class Config(BaseSettings):
         if self.vad_model_path is None:
             self.vad_model_path = self.base_dir / "models" / "silero_vad.onnx"
     
-    @validator("silence_weight", "linguistic_weight", "context_weight")
-    def validate_weights(cls, v, values):
+    @field_validator("silence_weight", "linguistic_weight", "context_weight")
+    @classmethod
+    def validate_weights(cls, v):
         """Ensure weights are between 0 and 1."""
         if not 0 <= v <= 1:
             raise ValueError(f"Weight must be between 0 and 1, got {v}")
         return v
     
-    @validator("vad_threshold", "backchannel_base_probability", "backchannel_volume")
+    @field_validator("vad_threshold", "backchannel_base_probability", "backchannel_volume")
+    @classmethod
     def validate_probability(cls, v):
         """Ensure probability values are between 0 and 1."""
         if not 0 <= v <= 1:

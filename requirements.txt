@@ -17,7 +17,7 @@ pydub==0.25.1
 onnxruntime==1.16.3
 
 # OpenAI (Whisper STT + TTS + LLM)
-openai==1.10.0
+openai>=1.30.0
 
 # Configuration
 python-dotenv==1.0.0
