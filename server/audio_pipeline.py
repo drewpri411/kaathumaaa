@@ -58,6 +58,10 @@ class AudioPipeline:
             if len(audio_data.shape) > 1:
                 audio_data = self.convert_to_mono(audio_data)
             
+            # Debug: Log audio reception
+            audio_level = np.abs(audio_data).max()
+            print(f"📥 Audio received: {len(audio_data)} samples, level: {audio_level:.4f}")
+            
             # Add to circular buffer
             self.circular_buffer.extend(audio_data)
             

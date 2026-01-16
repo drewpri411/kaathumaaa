@@ -46,10 +46,11 @@ class VADProcessor:
         self.speech_start_threshold = 3  # chunks
         self.speech_end_threshold = 5    # chunks
         
+        
         # ONNX model
         self.session: Optional[ort.InferenceSession] = None
-        self._h = np.zeros((2, 1, 64), dtype=np.float32)
-        self._c = np.zeros((2, 1, 64), dtype=np.float32)
+        # Silero VAD v4+ uses a single 'state' input instead of separate h/c
+        self._state = np.zeros((2, 1, 128), dtype=np.float32)
         
         self._lock = asyncio.Lock()
         
@@ -110,17 +111,15 @@ class VADProcessor:
         try:
             ort_inputs = {
                 'input': audio,
-                'h': self._h,
-                'c': self._c,
+                'state': self._state,
                 'sr': np.array([self.sample_rate], dtype=np.int64)
             }
             
             ort_outputs = self.session.run(None, ort_inputs)
             probability = ort_outputs[0][0][0]
             
-            # Update hidden states
-            self._h = ort_outputs[1]
-            self._c = ort_outputs[2]
+            # Update state
+            self._state = ort_outputs[1]
             
         except Exception as e:
             print(f"VAD inference error: {e}")
@@ -223,6 +222,5 @@ class VADProcessor:
         self.consecutive_speech_chunks = 0
         self.consecutive_silence_chunks = 0
         
-        # Reset LSTM states
-        self._h = np.zeros((2, 1, 64), dtype=np.float32)
-        self._c = np.zeros((2, 1, 64), dtype=np.float32)
+        # Reset state
+        self._state = np.zeros((2, 1, 128), dtype=np.float32)
