@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from openai import AsyncOpenAI
+import numpy as np
+import wave
+from scipy import signal
 
 
 async def generate_backchannels():
@@ -53,17 +56,30 @@ async def generate_backchannels():
                 model="tts-1",
                 voice="alloy",
                 input=text,
-                response_format="wav"
+                response_format="pcm"  # Get raw PCM data for resampling
             )
             
-            # Save to file
+            # Get audio bytes
             audio_bytes = await response.aread()
-            output_path.write_bytes(audio_bytes)
+            
+            # Convert bytes to numpy array (24kHz, 16-bit PCM)
+            audio_24k = np.frombuffer(audio_bytes, dtype=np.int16)
+            
+            # Resample from 24kHz to 16kHz
+            num_samples_16k = int(len(audio_24k) * 16000 / 24000)
+            audio_16k = signal.resample(audio_24k, num_samples_16k).astype(np.int16)
+            
+            # Save as WAV file at 16kHz
+            with wave.open(str(output_path), 'wb') as wav_file:
+                wav_file.setnchannels(1)  # Mono
+                wav_file.setsampwidth(2)  # 16-bit
+                wav_file.setframerate(16000)  # 16kHz
+                wav_file.writeframes(audio_16k.tobytes())
             
             # Get file size
-            size_kb = len(audio_bytes) / 1024
+            size_kb = output_path.stat().st_size / 1024
             
-            print(f"   ✅ Saved to {output_path} ({size_kb:.1f} KB)")
+            print(f"   ✅ Saved to {output_path} ({size_kb:.1f} KB, 16kHz)")
         
         except Exception as e:
             print(f"   ❌ Error generating {name}: {e}")

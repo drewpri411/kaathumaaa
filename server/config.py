@@ -84,8 +84,8 @@ class Config(BaseSettings):
         "case_sensitive": False,
     }
     
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def model_post_init(self, __context) -> None:
+        """Initialize paths after model validation."""
         # Set default paths relative to base_dir
         if self.backchannel_dir is None:
             self.backchannel_dir = self.base_dir / "backchannels"

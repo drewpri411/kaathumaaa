@@ -161,7 +161,7 @@ async def index():
     index_file = static_dir / "index.html"
     
     if index_file.exists():
-        return index_file.read_text()
+        return index_file.read_text(encoding='utf-8')
     else:
         return "<h1>Voice Agent</h1><p>Static files not found</p>"
 
