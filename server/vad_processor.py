@@ -121,6 +121,15 @@ class VADProcessor:
             # Update state
             self._state = ort_outputs[1]
             
+            # Debug: Log VAD probability (log every 100th chunk to avoid spam)
+            if hasattr(self, '_vad_log_count'):
+                self._vad_log_count += 1
+            else:
+                self._vad_log_count = 0
+            
+            if self._vad_log_count % 100 == 0 or probability > 0.3:
+                print(f"🎤 VAD prob: {probability:.3f} (thresh: {self.threshold}, count: {self._vad_log_count})")
+            
         except Exception as e:
             print(f"VAD inference error: {e}")
             probability = 0.0
@@ -155,6 +164,8 @@ class VADProcessor:
                     self.speech_start_time = datetime.now()
                     self.silence_start_time = None
                     
+                    print(f"🗣️  SPEECH STARTED (prob: {probability:.3f})")
+                    
                     await event_bus.emit(EventType.SPEECH_STARTED, {
                         "timestamp": self.speech_start_time,
                         "probability": probability
@@ -172,6 +183,8 @@ class VADProcessor:
                         # Transition to SILENCE_AFTER_SPEECH
                         self.current_state = VADState.SILENCE_AFTER_SPEECH
                         self.silence_start_time = datetime.now()
+                        
+                        print(f"🤫 SILENCE DETECTED after {self.get_speech_duration():.0f}ms of speech")
                         
                         await event_bus.emit(EventType.SILENCE_DETECTED, {
                             "timestamp": self.silence_start_time,

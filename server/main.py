@@ -140,10 +140,14 @@ async def vad_processing_loop():
     vad = components['vad_processor']
     pipeline = components['audio_pipeline']
     
+    chunk_count = 0
     while True:
         try:
             # Process VAD chunks
             for chunk in pipeline.get_vad_chunks():
+                chunk_count += 1
+                if chunk_count % 100 == 0:
+                    print(f"🔍 Processed {chunk_count} VAD chunks")
                 await vad.process_chunk(chunk)
             
             await asyncio.sleep(0.01)  # 10ms

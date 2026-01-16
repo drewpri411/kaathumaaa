@@ -67,6 +67,7 @@ class TranscriptionCoordinator:
                 for chunk in self.audio_pipeline.get_whisper_chunks():
                     # Send for transcription
                     chunk_id = str(uuid.uuid4())
+                    print(f"🎵 Sending {len(chunk)} samples to Whisper API...")
                     task = asyncio.create_task(
                         self._transcribe_and_handle(chunk, chunk_id)
                     )
@@ -98,11 +99,15 @@ class TranscriptionCoordinator:
         # Transcribe
         text = await self.stt_client.transcribe_chunk(audio_chunk, is_final=False)
         
+        print(f"📝 Whisper result: '{text}'")
+        
         if text:
             # Deduplicate
             new_text = self.deduplicate(text)
             
             if new_text:
+                print(f"✅ New text (deduplicated): '{new_text}'")
+                
                 # Update conversation manager
                 await self.conversation_manager.add_transcript(
                     text=new_text,

@@ -121,9 +121,15 @@ class WebRTCHandler:
         Args:
             track: Audio track from client
         """
+        frame_count = 0
         try:
             while True:
                 frame = await track.recv()
+                frame_count += 1
+                
+                # Log every 100 frames (~2 seconds)
+                if frame_count % 100 == 0:
+                    print(f"🎧 Received {frame_count} audio frames from WebRTC")
                 
                 # Convert frame to numpy array
                 audio = frame.to_ndarray()
